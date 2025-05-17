@@ -29,8 +29,8 @@ jobs:
           lix_version: 2.93.0
       - uses: cachix/cachix-action@v16
         with:
-          name: canidae-solutions
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          name: catgirl-v
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Fix Lix tests
         if: matrix.os == 'ubuntu-24.04-arm'
         run: |
@@ -107,20 +107,20 @@ jobs:
           lix_version: ${{ matrix.version }}
       - uses: cachix/cachix-action@v16
         with:
-          name: canidae-solutions
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          name: catgirl-v
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
           skipPush: true
       - name: Verify nix config
         run: |
-          if ! egrep -q "^substituters = https://cache.nixos.org https://canidae-solutions.cachix.org$" "$HOME/.config/nix/nix.conf"; then
+          if ! egrep -q "^substituters = https://cache.nixos.org https://catgirl-v.cachix.org$" "$HOME/.config/nix/nix.conf"; then
             echo "Invalid substituters config"
             exit 1
           fi
       - name: Push to Cachix
-        if: github.event_name == 'push' && github.repository_owner == 'canidae-solutions'
+        if: github.event_name == 'push' && github.repository_owner == 'catgirl-v'
         run: |
           dd if=/dev/urandom of=random count=1
-          cachix push canidae-solutions "$(nix add-to-store random)"
+          cachix push catgirl-v "$(nix add-to-store random)"
 
   release:
     runs-on: ubuntu-latest
@@ -155,8 +155,8 @@ jobs:
           lix_version: 2.92.0
       - uses: cachix/cachix-action@v16
         with:
-          name: canidae-solutions
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          name: catgirl-v
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Build release script
         run: nix build -f default.nix releaseScript
       - name: Release if needed

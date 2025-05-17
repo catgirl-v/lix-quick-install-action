@@ -18,49 +18,73 @@ let
   # Makes a set of Lix packages, where the version is the key and the package is the value.
   #
   # Accepts:
-  # - f: A function that accepts a system, and a Lix package, that produces the final value assigned to the version in
+  # - f: A function that accepts a system, and a Lix package scope, that produces the final value assigned to the
+  #   version in the set.
+  # - lixPackagesListForSystem: A function that accepts a system, and returns a list of Lix package scopes to include in
   #   the set.
-  # - lixen: A function that accepts a system, and returns a list of Lix packages to include in the set.
   # - system: The system to produce a set for.
   mkLixSet =
-    f: lixen: system:
+    f: lixPackagesListForSystem: system:
+    let
+      lixPackagesList = lixPackagesListForSystem system;
+    in
     listToAttrs (
-      map (lix: nameValuePair "v${replaceStrings [ "." ] [ "_" ] lix.version}" (f system lix)) (
-        lixen system
-      )
+      map (
+        lixPkgs: nameValuePair "v${replaceStrings [ "." ] [ "_" ] lixPkgs.lix.version}" (f system lixPkgs)
+      ) lixPackagesList
     );
 
-  # Accepts a system, and returns a list of Lix derivations that are supported on that system.
+  # Accepts a system, and returns a list of Lix package scopes that are supported on that system.
   # Currently there's no variation between systems (ie. all systems support all versions), but that may change in the
   # future.
-  lixVersionsForSystem =
-    system:
+  lixPackagesListForSystem =
     let
-      # The Lix repo doesn't give us a good way to override nixpkgs when consuming it from outside a flake, so we can
-      # do some hacks with the overlay instead.
-      lix_2_92 = ((import pins.lix-2_92).overlays.default pkgs pkgs).nix.override {
-        # From <https://git.lix.systems/lix-project/nixos-module/pulls/59>:
-        # Do not override editline-lix
-        # according to the upstream packaging.
-        # This was fixed in nixpkgs directly.
-        editline-lix = editline.overrideAttrs (old: {
-          propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [ ncurses ];
-        });
-      };
-
-      lix_2_93 = ((import pins.lix-2_93).overlays.default pkgs pkgs).nix;
+      disableLixLtoOnDarwin =
+        finalLixPackages: prevLixPackages:
+        let
+          inherit (pkgs) lib;
+        in
+        {
+          lix = prevLixPackages.lix.overrideAttrs (
+            finalAttrs: prevAttrs:
+            let
+              inherit (lib.lists) filter;
+              inherit (lib.strings) hasPrefix mesonBool versionAtLeast;
+              isLLVMOnly = versionAtLeast finalAttrs.version "2.92";
+              # GCC 13.2 is known to miscompile Lix coroutines (introduced in 2.92).
+              lixStdenv = if versionAtLeast finalAttrs.version "2.92" then pkgs.clangStdenv else pkgs.stdenv;
+            in
+            {
+              mesonFlags = map (
+                mesonFlag:
+                # https://git.lix.systems/lix-project/lix/issues/832
+                if hasPrefix "-Db_lto=" mesonFlag then
+                  mesonBool "b_lto" (
+                    !lixStdenv.hostPlatform.isStatic
+                    && !lixStdenv.hostPlatform.isDarwin
+                    && (isLLVMOnly || lixStdenv.cc.isGNU)
+                  )
+                else
+                  mesonFlag
+              ) prevAttrs.mesonFlags or [ ];
+            }
+          );
+        };
     in
+    system:
     [
-      lix_2_93
-      lix_2_92
-      lixVersions.lix_2_91
+      (pkgs.lixPackageSets.lix_2_93.overrideScope disableLixLtoOnDarwin)
+      (pkgs.lixPackageSets.lix_2_92.overrideScope disableLixLtoOnDarwin)
+      pkgs.lixPackageSets.lix_2_91
     ];
 in
 rec {
+  # Accepts a system, and returns an attribute set from supported versions to Lix package derivations.
+  lixPackagesFor = mkLixSet (_: lixPackages: lixPackages) lixPackagesListForSystem;
   # Accepts a system, and returns an attribute set from supported versions to Lix derivations.
-  lixVersionsFor = mkLixSet (_: lix: lix) lixVersionsForSystem;
+  lixVersionsFor = mkLixSet (_: lixPackages: lixPackages.lix) lixPackagesListForSystem;
   # Accepts a system, and returns an attribute set from supported versions to a Lix archive for that version.
-  lixArchivesFor = mkLixSet makeStoreArchive lixVersionsForSystem;
+  lixArchivesFor = mkLixSet makeStoreArchive lixPackagesListForSystem;
 
   # Accepts a system, and returns a derivation producing a folder containing Lix archives for all Lix versions
   # supported by the given system.

@@ -124,7 +124,9 @@ done
 
 # Install lix in profile
 MANPATH= . "$lix/etc/profile.d/nix.sh"
-"$lix/bin/nix-env" -i "$lix"
+nix_eval_jobs="$(readlink /nix/var/lix-quick-install-action/nix-eval-jobs)"
+nix_fast_build="$(readlink /nix/var/lix-quick-install-action/nix-fast-build)"
+"$lix/bin/nix-env" -i "$lix" "$nix_eval_jobs" "$nix_fast_build"
 
 # Certificate bundle is not detected by nix.sh on macOS.
 if [ -z "${NIX_SSL_CERT_FILE:-}" -a -e "/etc/ssl/cert.pem" ]; then

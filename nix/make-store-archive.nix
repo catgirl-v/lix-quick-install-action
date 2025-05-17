@@ -8,7 +8,11 @@
 
 system: lixPackages:
 let
-  inherit (lixPackages) lix;
+  inherit (lixPackages)
+    lix
+    nix-eval-jobs
+    nix-fast-build
+    ;
 in
 
 # Produces an archive for a Lix version that gets installed on runners with the action. The archive contains a minimal
@@ -22,13 +26,21 @@ runCommand "lix-${lix.version}-archive"
       zstd
     ];
 
-    closureInfo = closureInfo { rootPaths = [ lixPkgs.lix ]; };
+    closureInfo = closureInfo {
+      rootPaths = [
+        lix
+        nix-eval-jobs
+        nix-fast-build
+      ];
+    };
     fileName = "lix-${lix.version}-${system}.tar.zstd";
     inherit (lix) version;
   }
   ''
     mkdir -p "$out" root/nix/var/{nix,lix-quick-install-action}
     ln -s ${lix} root/nix/var/lix-quick-install-action/lix
-    cp $closureInfo/registration root/nix/var/lix-quick-install-action
-    tar -cvT $closureInfo/store-paths -C root nix | zstd -o "$out/$fileName"
+    ln -s ${nix-eval-jobs} root/nix/var/lix-quick-install-action/nix-eval-jobs
+    ln -s ${nix-fast-build} root/nix/var/lix-quick-install-action/nix-fast-build
+    cp "$closureInfo/registration" root/nix/var/lix-quick-install-action
+    tar -cvT "$closureInfo/store-paths" -C root nix | zstd -o "$out/$fileName"
   ''

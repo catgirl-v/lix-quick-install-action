@@ -6,7 +6,10 @@
   zstd,
 }:
 
-system: lix:
+system: lixPackages:
+let
+  inherit (lixPackages) lix;
+in
 
 # Produces an archive for a Lix version that gets installed on runners with the action. The archive contains a minimal
 # Nix store containing just the closure over the Lix derivation and some supporting files to setup the Nix store
@@ -19,12 +22,12 @@ runCommand "lix-${lix.version}-archive"
       zstd
     ];
 
-    closureInfo = closureInfo { rootPaths = [ lix ]; };
+    closureInfo = closureInfo { rootPaths = [ lixPkgs.lix ]; };
     fileName = "lix-${lix.version}-${system}.tar.zstd";
     inherit (lix) version;
   }
   ''
-    mkdir -p $out root/nix/var/{nix,lix-quick-install-action}
+    mkdir -p "$out" root/nix/var/{nix,lix-quick-install-action}
     ln -s ${lix} root/nix/var/lix-quick-install-action/lix
     cp $closureInfo/registration root/nix/var/lix-quick-install-action
     tar -cvT $closureInfo/store-paths -C root nix | zstd -o "$out/$fileName"

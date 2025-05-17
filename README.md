@@ -1,6 +1,6 @@
 # lix quick install action
 
-[![ci/cd pipeline static](https://img.shields.io/github/actions/workflow/status/canidae-solutions/lix-quick-install-action/cicd.yml)](https://github.com/canidae-solutions/lix-quick-install-action/actions/workflows/cicd.yml) [![latest release](https://img.shields.io/github/v/release/canidae-solutions/lix-quick-install-action)](https://github.com/canidae-solutions/lix-quick-install-action/releases/latest) ![trans rights](https://pride-badges.pony.workers.dev/static/v1?label=trans%20rights&stripeWidth=6&stripeColors=5BCEFA,F5A9B8,FFFFFF,F5A9B8,5BCEFA)
+[![ci/cd pipeline static](https://img.shields.io/github/actions/workflow/status/catgirl-v/lix-quick-install-action/cicd.yml)](https://github.com/catgirl-v/lix-quick-install-action/actions/workflows/cicd.yml) [![latest release](https://img.shields.io/github/v/release/catgirl-v/lix-quick-install-action)](https://github.com/catgirl-v/lix-quick-install-action/releases/latest) ![trans rights](https://pride-badges.pony.workers.dev/static/v1?label=trans%20rights&stripeWidth=6&stripeColors=5BCEFA,F5A9B8,FFFFFF,F5A9B8,5BCEFA)
 
 sets up [lix](https://lix.systems/) in single-user mode on github actions, really fast.
 
@@ -13,12 +13,12 @@ getting started only takes one extra line in your workflows:
 
 ```yaml
 steps:
-  - uses: canidae-solutions/lix-quick-install-action@v3
+  - uses: catgirl-v/lix-quick-install-action@v3
 ```
 
 ## notes
 
-to keep the install super-speedy, the action doesn't do much more than just setup lix in single user mode. that means there's no multi-user daemon, no channels configured, and nothing in `NIX_PATH`. notably, this means references to eg. `<nixpkgs>` in your code won't work - you'll need to manage dependencies yourself. we recommend using [npins](https://github.com/andir/npins) for this, but any other solution will work just fine, including [niv](https://github.com/nmattia/niv) or [flakes](https://nixos.wiki/wiki/Flakes). check out the [examples directory](https://github.com/canidae-solutions/lix-quick-install-action/tree/main/examples) to see how it all works.
+to keep the install super-speedy, the action doesn't do much more than just setup lix in single user mode. that means there's no multi-user daemon, no channels configured, and nothing in `NIX_PATH`. notably, this means references to eg. `<nixpkgs>` in your code won't work - you'll need to manage dependencies yourself. we recommend using [npins](https://github.com/andir/npins) for this, but any other solution will work just fine, including [niv](https://github.com/nmattia/niv) or [flakes](https://nixos.wiki/wiki/Flakes). check out the [examples directory](https://github.com/catgirl-v/lix-quick-install-action/tree/main/examples) to see how it all works.
 
 if you need something other than single-user lix in your pipelines, here's some suggestions:
 - need multi-user lix? [samueldr/lix-gha-installer-action](https://github.com/samueldr/lix-gha-installer-action) does a full install of lix in multi-user mode (ie. with a daemon) using the official lix installer.
@@ -32,21 +32,21 @@ caching your builds is a great way to speed up your ci runs even further! you ca
 we expose a nix expression from this repo that contains derivations for the exact same copies of lix that we install in runners with this action, so you can use them to quickly run local tests against the environment in actions with `nix run`, like so:
 
 ```
-$ nix run -f https://github.com/canidae-solutions/lix-quick-install-action/archive/refs/heads/main.zip lixVersions.v2_93_0 -- --version
+$ nix run -f https://github.com/catgirl-v/lix-quick-install-action/archive/refs/heads/main.zip lixVersions.v2_93_0 -- --version
 nix (Lix, like Nix) 2.93.0
 ```
 
 all of the lix derivations live under `lixVersions`, keyed by version. if you need to see what versions we have available, you can run:
 
 ```
-$ nix eval -f https://github.com/canidae-solutions/lix-quick-install-action/archive/refs/heads/main.zip lixVersions --apply builtins.attrNames
+$ nix eval -f https://github.com/catgirl-v/lix-quick-install-action/archive/refs/heads/main.zip lixVersions --apply builtins.attrNames
 [ "v2_91_1" "v2_92_0" "v2_93_0" ]
 ```
 
 you can also specify a specific version of the action, to see what lix versions are available in that release. just replace `main` in the url with the version.
 
 ```
-$ nix build -f https://github.com/canidae-solutions/lix-quick-install-action/archive/refs/heads/v1.zip lixVersions.v2_90_0
+$ nix build -f https://github.com/catgirl-v/lix-quick-install-action/archive/refs/heads/v1.zip lixVersions.v2_90_0
 nix (Lix, like Nix) 2.90.0
 ```
 
@@ -56,7 +56,7 @@ the action supports a few optional configurations, to fine-tune the installation
 
 | option              | description                                                                                                                                                   | default                                                                |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| `lix_version`       | the version of lix to install. check the [releases](https://github.com/canidae-solutions/lix-quick-install-action/releases) for a list of supported versions. | 2.93.0                                                                 |
+| `lix_version`       | the version of lix to install. check the [releases](https://github.com/catgirl-v/lix-quick-install-action/releases) for a list of supported versions.         | 2.93.0                                                                 |
 | `lix_conf`          | extra configuration options to add to `/etc/nix/nix.conf`.                                                                                                    | `<empty>`                                                                     |
 | `github_access_token` | the access token to use when fetching github repositories.                                                                                                    | `${{ github.token }}` (ie. the same token exposed during actions runs) |
 | `lix_on_tmpfs`      | whether to install the lix store on a tmpfs. this can speed up lix builds a little bit, at the expense of using extra memory in the runner.                   | `false`                                                                |

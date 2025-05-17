@@ -13,7 +13,7 @@ inputs:
       release of lix-quick-install-action has a specific set of supported
       Lix versions, which do not change. You can check what Lix versions are
       supported by the version of lix-quick-install-action you're using by
-      going to https://github.com/canidae-solutions/lix-quick-install-action/releases.
+      going to https://github.com/catgirl-v/lix-quick-install-action/releases.
 
   lix_conf:
     required: false
